@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Management System</title>
+
+<style>
+body{
+    font-family: 'Segoe UI';
+    margin:0;
+    background:#f1f5f9;
+}
+.login-container{
+    width:300px;
+    margin:100px auto;
+    background:white;
+    padding:25px;
+    border-radius:10px;
+    box-shadow:0 5px 15px rgba(0,0,0,0.2);
+    text-align:center;
+}
+input, select{
+    width:90%;
+    padding:10px;
+    margin:10px 0;
+    border:1px solid #ccc;
+    border-radius:6px;
+}
+button{
+    padding:10px;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+}
+.login-btn{ background:#2563eb; color:white; width:95%; }
+
+header{
+    background:#0f172a;
+    color:white;
+    padding:15px;
+    display:flex;
+    justify-content:space-between;
+}
+.logout-btn{
+    background:#dc2626;
+    color:white;
+}
+.container{
+    width:90%;
+    margin:20px auto;
+}
+.card{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    margin-bottom:15px;
+    text-align:center;
+    box-shadow:0 3px 10px rgba(0,0,0,0.1);
+}
+form{
+    background:white;
+    padding:15px;
+    border-radius:10px;
+    margin-bottom:15px;
+    box-shadow:0 3px 10px rgba(0,0,0,0.1);
+}
+.add-btn{ background:#16a34a; color:white; }
+.edit-btn{ background:#f59e0b; color:white; }
+.delete-btn{ background:#dc2626; color:white; }
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    background:white;
+    border-radius:10px;
+    overflow:hidden;
+}
+th, td{
+    padding:10px;
+    text-align:center;
+}
+th{
+    background:#1e293b;
+    color:white;
+}
+.search input{
+    width:40%;
+}
+.hidden{
+    display:none;
+}
+</style>
+</head>
+
+<body>
+<div id="loginPage" class="login-container">
+    <h2>Admin Login</h2>
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button class="login-btn" onclick="login()">Login</button>
+    <p id="loginMsg" style="color:red;"></p>
+</div>
+<div id="mainPage" class="hidden">
+
+<header>
+    <div>Admin Panel</div>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+</header>
+
+<div class="container">
+
+<div class="card">
+    <h2 id="totalStudents">0</h2>
+    <p>Total Students</p>
+</div>
+<form id="studentForm">
+    <input type="text" id="name" placeholder="Name">
+    <input type="text" id="id" placeholder="ID">
+    <select id="course">
+        <option value="">Select Course</option>
+        <option value="BCA">BCA</option>
+        <option value="BSc Computer Science">BSc Computer Science</option>
+        <option value="BCom">BCom</option>
+        <option value="BA English">BA English</option>
+        <option value="MBA">MBA</option>
+        <option value="MCA">MCA</option>
+    </select>
+
+    <button class="add-btn" type="submit">Save</button>
+</form>
+<div class="search">
+    <input type="text" id="search" placeholder="Search..." onkeyup="searchStudent()">
+</div>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>ID</th>
+<th>Course</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody id="tableBody"></tbody>
+</table>
+
+</div>
+</div>
+
+<script>
+function login(){
+    let user = document.getElementById("username").value;
+    let pass = document.getElementById("password").value;
+
+    if(user === "admin" && pass === "1234"){
+        localStorage.setItem("loggedIn", "true");
+        showMain();
+    } else {
+        document.getElementById("loginMsg").innerText = "Invalid login!";
+    }
+}
+function logout(){
+    localStorage.removeItem("loggedIn");
+    location.reload();
+}
+function showMain(){
+    document.getElementById("loginPage").style.display = "none";
+    document.getElementById("mainPage").classList.remove("hidden");
+}
+if(localStorage.getItem("loggedIn") === "true"){
+    showMain();
+}
+let students = JSON.parse(localStorage.getItem("students")) || [];
+let editIndex = -1;
+document.getElementById("studentForm").addEventListener("submit", function(e){
+    e.preventDefault();
+
+    let name = document.getElementById("name").value;
+    let id = document.getElementById("id").value;
+    let course = document.getElementById("course").value;
+
+    if(!name || !id || !course){
+        alert("Fill all fields!");
+        return;
+    }
+
+    let student = { name, id, course };
+
+    if(editIndex === -1){
+        students.push(student);
+    } else {
+        students[editIndex] = student;
+        editIndex = -1;
+    }
+
+    localStorage.setItem("students", JSON.stringify(students));
+    displayStudents();
+    this.reset();
+});
+function displayStudents(list = students){
+    let table = document.getElementById("tableBody");
+    table.innerHTML = "";
+
+    list.forEach((s, index) => {
+        table.innerHTML += `
+        <tr>
+            <td>${s.name}</td>
+            <td>${s.id}</td>
+            <td>${s.course}</td>
+            <td>
+                <button class="edit-btn" onclick="editStudent(${index})">Edit</button>
+                <button class="delete-btn" onclick="deleteStudent(${index})">Delete</button>
+            </td>
+        </tr>
+        `;
+    });
+
+    document.getElementById("totalStudents").innerText = students.length;
+}
+function deleteStudent(index){
+    if(confirm("Delete this student?")){
+        students.splice(index,1);
+        localStorage.setItem("students", JSON.stringify(students));
+        displayStudents();
+    }
+}
+function editStudent(index){
+    let s = students[index];
+    document.getElementById("name").value = s.name;
+    document.getElementById("id").value = s.id;
+    document.getElementById("course").value = s.course;
+    editIndex = index;
+}
+function searchStudent(){
+    let val = document.getElementById("search").value.toLowerCase();
+
+    let filtered = students.filter(s =>
+        s.name.toLowerCase().includes(val) ||
+        s.id.toLowerCase().includes(val) ||
+        s.course.toLowerCase().includes(val)
+    );
+
+    displayStudents(filtered);
+}
+displayStudents();
+</script>
+
+</body>
+</html>
